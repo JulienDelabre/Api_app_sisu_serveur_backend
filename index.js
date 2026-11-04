@@ -436,7 +436,7 @@ app.post('/api/auth/reset-password', limiter(15 * 60 * 1000, 20), async (req, re
 });
 
 // ---- Profil de connexion ----
-app.get('/api/me', requireAuth, async (req, res, next) => {
+app.get('/api/me', requireAuth, requireVerified, async (req, res, next) => {
   try {
     const used = await usedToday(req.user.id);
     res.json({
