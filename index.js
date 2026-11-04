@@ -64,8 +64,19 @@ const app = express();
 app.set('trust proxy', 1);
 app.use(helmet());
 
-const allowed = (process.env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
-app.use(cors({ origin: allowed.length ? allowed : false }));
+// Autoriser les origines de l'application SISU et conserver les origines
+// supplémentaires configurées par l'exploitant dans ALLOWED_ORIGINS.
+const configuredOrigins = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+const allowed = [
+  'https://appsisu.com',
+  'https://www.appsisu.com',
+  'https://appsisu-tmp.ai.studio',
+  ...configuredOrigins,
+];
+app.use(cors({ origin: [...new Set(allowed)] }));
 
 // Les photos passent en base64 : corps plus gros uniquement pour les routes concernées.
 app.use('/api/llm', express.json({ limit: '10mb' }));
