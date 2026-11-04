@@ -313,7 +313,7 @@ module.exports = function registerDataRoutes(app, deps) {
   // =====================================================================
   // Consentements
   // =====================================================================
-  app.get('/api/consents', requireAuth, wrap(async (req, res) => {
+  app.get('/api/consents', ...authed, wrap(async (req, res) => {
     const [rows] = await pool.execute(
       'SELECT consent_type, document_version, granted_at, withdrawn_at FROM user_consents WHERE user_id = ? ORDER BY granted_at DESC',
       [req.user.id]
@@ -333,7 +333,7 @@ module.exports = function registerDataRoutes(app, deps) {
     res.json({ consents });
   }));
 
-  app.post('/api/consents', requireAuth, wrap(async (req, res) => {
+  app.post('/api/consents', ...authed, wrap(async (req, res) => {
     const { type, documentVersion } = req.body || {};
     if (!CONSENT_TYPES.includes(type) || typeof documentVersion !== 'string' || !/^[\w.\-]{1,20}$/.test(documentVersion)) {
       throw new HttpError(400, 'Consentement invalide');
@@ -351,7 +351,7 @@ module.exports = function registerDataRoutes(app, deps) {
     res.json({ ok: true });
   }));
 
-  app.post('/api/consents/withdraw', requireAuth, wrap(async (req, res) => {
+  app.post('/api/consents/withdraw', ...authed, wrap(async (req, res) => {
     const type = req.body && req.body.type;
     if (!CONSENT_TYPES.includes(type)) throw new HttpError(400, 'Consentement invalide');
     await pool.execute(
