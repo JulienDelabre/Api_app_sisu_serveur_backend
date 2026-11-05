@@ -74,6 +74,8 @@ const allowed = [
   'https://appsisu.com',
   'https://www.appsisu.com',
   'https://appsisu-tmp.ai.studio',
+  'capacitor://localhost', // iOS WebView
+  'https://localhost', // Android WebView (androidScheme: https)
   ...configuredOrigins,
 ];
 app.use(cors({ origin: [...new Set(allowed)] }));
