@@ -64,6 +64,22 @@ const app = express();
 app.set('trust proxy', 1);
 app.use(helmet());
 
+// Journal de diagnostic pour l'authentification : aucun corps de requête,
+// mot de passe, code de vérification, jeton ou adresse IP n'est enregistré.
+app.use((req, res, next) => {
+  if (!req.path.startsWith('/api/auth/')) return next();
+  const startedAt = Date.now();
+  const origin = String(req.headers.origin || '-').replace(/[\\r\\n]/g, '').slice(0, 200);
+  const path = req.path.replace(/[\\r\\n]/g, '').slice(0, 160);
+
+  res.once('finish', () => {
+    console.info(
+      `[AUTH HTTP] ${req.method} ${path} origin=${origin} status=${res.statusCode} durationMs=${Date.now() - startedAt}`
+    );
+  });
+  next();
+});
+
 // Autoriser les origines de l'application SISU et conserver les origines
 // supplémentaires configurées par l'exploitant dans ALLOWED_ORIGINS.
 const configuredOrigins = (process.env.ALLOWED_ORIGINS || '')
