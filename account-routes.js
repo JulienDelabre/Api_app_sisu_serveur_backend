@@ -71,11 +71,11 @@ module.exports = function registerAccountRoutes(app, deps) {
   // =====================================================================
   // MON COMPTE
   // =====================================================================
-  app.get('/api/account', requireAuth, wrap(async (req, res) => {
+  app.get('/api/account', ...verified, wrap(async (req, res) => {
     res.json({ account: await getAccount(req.user.id) });
   }));
 
-  app.patch('/api/account', requireAuth, limiter(15 * 60 * 1000, 30), wrap(async (req, res) => {
+  app.patch('/api/account', ...verified, limiter(15 * 60 * 1000, 30), wrap(async (req, res) => {
     const b = req.body || {};
     const sets = [];
     const vals = [];
@@ -117,7 +117,7 @@ module.exports = function registerAccountRoutes(app, deps) {
   }));
 
   // --- Changement d'adresse e-mail : un code est envoyé à la NOUVELLE adresse ---
-  app.post('/api/account/email', requireAuth, limiter(60 * 60 * 1000, 10), wrap(async (req, res) => {
+  app.post('/api/account/email', ...verified, limiter(60 * 60 * 1000, 10), wrap(async (req, res) => {
     const newEmail = normEmail(req.body && req.body.newEmail);
     if (!validEmail(newEmail)) throw new HttpError(400, 'Adresse e-mail invalide');
     if (!(await checkPassword(req.user.id, req.body && req.body.currentPassword))) {
@@ -155,7 +155,7 @@ module.exports = function registerAccountRoutes(app, deps) {
     res.json({ ok: true, pendingEmail: newEmail, cooldownSec: 60 });
   }));
 
-  app.post('/api/account/email/confirm', requireAuth, limiter(15 * 60 * 1000, 20), wrap(async (req, res) => {
+  app.post('/api/account/email/confirm', ...verified, limiter(15 * 60 * 1000, 20), wrap(async (req, res) => {
     const [pending] = await pool.execute('SELECT new_email FROM pending_email_changes WHERE user_id = ?', [req.user.id]);
     if (!pending[0]) throw new HttpError(400, 'Aucun changement d’adresse en attente');
     if (!(await checkCode(req.user.id, 'email_change', req.body && req.body.code))) {
@@ -181,7 +181,7 @@ module.exports = function registerAccountRoutes(app, deps) {
   }));
 
   // --- Changement de mot de passe : actuel + deux fois le nouveau ---
-  app.post('/api/account/password', requireAuth, limiter(15 * 60 * 1000, 10), wrap(async (req, res) => {
+  app.post('/api/account/password', ...verified, limiter(15 * 60 * 1000, 10), wrap(async (req, res) => {
     const { currentPassword, newPassword, newPasswordConfirm } = req.body || {};
     if (typeof newPassword !== 'string' || newPassword !== newPasswordConfirm) {
       throw new HttpError(400, 'Les deux nouveaux mots de passe sont différents');
