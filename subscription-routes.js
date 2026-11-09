@@ -77,8 +77,7 @@ module.exports = function registerSubscriptionRoutes(app, deps) {
   }
 
   function isAutoRenewable(transaction) {
-    return transaction.type === 'Auto-Renewable Subscription' ||
-      transaction.productType === 'AUTO_RENEWABLE';
+    return transaction.type === 'Auto-Renewable Subscription';
   }
 
   function allowedProducts() {
@@ -224,7 +223,7 @@ module.exports = function registerSubscriptionRoutes(app, deps) {
     }
     const data = notification.data || {};
     if (!data.signedTransactionInfo) return res.json({ ok: true });
-    const transaction = (await checked.verifier.verifyAndDecodeTransaction(data.signedTransactionInfo)).value;
+    const transaction = await checked.verifier.verifyAndDecodeTransaction(data.signedTransactionInfo);
     let renewalInfo;
     if (data.signedRenewalInfo) {
       try {
