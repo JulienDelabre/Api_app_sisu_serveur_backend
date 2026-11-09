@@ -34,6 +34,40 @@ module.exports = function registerAppStateRoutes(app, deps) {
     }
   };
 
+  app.post('/api/me/data/reset', requireAuth, requireVerified, limiter(15 * 60 * 1000, 5), wrap(async (req, res) => {
+    const tables = [
+      'community_posts',
+      'community_challenge_memberships',
+      'meal_logs',
+      'body_measurements',
+      'workout_sessions',
+      'workout_week_plans',
+      'daily_activity',
+      'health_integrations',
+      'user_profiles',
+      'user_goals',
+      'user_body_photos',
+      'user_body_state',
+      'user_goal_photos',
+      'user_progress_photos',
+      'user_app_state'
+    ];
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      for (const table of tables) {
+        await connection.execute(`DELETE FROM ${table} WHERE user_id = ?`, [req.user.id]);
+      }
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+    res.json({ ok: true });
+  }));
+
   app.get('/api/public/stats', limiter(60 * 1000, 60), wrap(async (_req, res) => {
     const [rows] = await pool.execute(
       `SELECT COUNT(*) AS total FROM users WHERE status = 'active' AND email_verified_at IS NOT NULL`
