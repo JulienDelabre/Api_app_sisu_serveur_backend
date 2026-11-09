@@ -475,6 +475,47 @@ module.exports = function registerDataRoutes(app, deps) {
     res.status(201).json({ meal });
   }));
 
+  app.post('/api/meals', limiter(60 * 1000, 60), ...authed, wrap(async (req, res) => {
+    const b = req.body || {};
+    const when = parseLocalDateTime(b.eatenAt);
+    if (!when) throw new HttpError(400, 'eatenAt invalide (format AAAA-MM-JJTHH:mm)');
+    if (when.ms > Date.now() + 15 * 60 * 1000) throw new HttpError(400, 'Date dans le futur');
+    if (when.ms < Date.now() - (MEAL_MAX_BACKDATE_DAYS * 24 + 15) * 3600 * 1000) {
+      throw new HttpError(400, `Repas trop ancien (${MEAL_MAX_BACKDATE_DAYS} jours maximum)`);
+    }
+    if (!MEAL_TYPES.includes(b.mealType)) throw new HttpError(400, 'Type de repas invalide');
+    const label = cleanText(b.label, 160);
+    if (!label) throw new HttpError(400, 'Nom du repas requis');
+    const values = [
+      ['caloriesKcal', 0, 5000, 0],
+      ['proteinG', 0, 500, 1],
+      ['carbsG', 0, 800, 1],
+      ['fatG', 0, 500, 1],
+    ];
+    const nutrition = {};
+    for (const [field, min, max, decimals] of values) {
+      if (!isNum(b[field], min, max)) throw new HttpError(400, `Valeur invalide : ${field}`);
+      nutrition[field] = round(b[field], decimals);
+    }
+    const id = require('crypto').randomUUID();
+    try {
+      await pool.execute(
+        `INSERT INTO meal_logs (id, user_id, eaten_on, eaten_at, eaten_hour, meal_type, label,
+          calories_kcal, protein_g, carbs_g, fat_g, source)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'manual')`,
+        [id, req.user.id, when.eatenOn, when.eatenAt, when.eatenHour, b.mealType, label,
+          nutrition.caloriesKcal, nutrition.proteinG, nutrition.carbsG, nutrition.fatG]
+      );
+    } catch (error) {
+      if (error.code === 'ER_DUP_ENTRY') {
+        throw new HttpError(409, 'Un repas est déjà enregistré pour cette heure', { code: 'MEAL_SLOT_TAKEN' });
+      }
+      throw error;
+    }
+    const [rows] = await pool.execute('SELECT * FROM meal_logs WHERE id = ? AND user_id = ?', [id, req.user.id]);
+    res.status(201).json({ meal: mapMeal(rows[0]) });
+  }));
+
   app.get('/api/meals', ...authed, wrap(async (req, res) => {
     const { from, to } = dateRange(req, 7, 93);
     const [rows] = await pool.execute(
