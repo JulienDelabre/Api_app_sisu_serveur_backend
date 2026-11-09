@@ -40,6 +40,49 @@ module.exports = function registerAppStateRoutes(app, deps) {
     res.json({ registeredUsersCount: Number(rows[0]?.total || 0) });
   }));
 
+  app.put('/api/app-state', requireAuth, requireVerified, limiter(60 * 1000, 60), wrap(async (req, res) => {
+    const state = req.body && req.body.state;
+    if (!state || typeof state !== 'object' || Array.isArray(state)) {
+      return res.status(400).json({ error: 'state doit être un objet' });
+    }
+    const entries = Object.entries(state);
+    if (entries.some(([key]) => !allowedKeys.has(key))) {
+      return res.status(400).json({ error: 'Une ou plusieurs clés sont inconnues' });
+    }
+    const values = [];
+    let totalBytes = 0;
+    try {
+      for (const [key, value] of entries) {
+        const encoded = JSON.stringify(value);
+        totalBytes += Buffer.byteLength(encoded, 'utf8');
+        values.push([req.user.id, key, encoded]);
+      }
+    } catch {
+      return res.status(400).json({ error: 'Donnée invalide' });
+    }
+    if (totalBytes > 8 * 1024 * 1024) {
+      return res.status(413).json({ error: 'Données trop volumineuses' });
+    }
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+      for (const row of values) {
+        await conn.execute(
+          `INSERT INTO user_app_state (user_id, state_key, state_value) VALUES (?, ?, ?)
+           ON DUPLICATE KEY UPDATE state_value = VALUES(state_value), updated_at = NOW()`,
+          row
+        );
+      }
+      await conn.commit();
+    } catch (error) {
+      await conn.rollback();
+      throw error;
+    } finally {
+      conn.release();
+    }
+    res.json({ ok: true, savedKeys: values.length });
+  }));
+
   app.get('/api/app-state', requireAuth, requireVerified, wrap(async (req, res) => {
     const [rows] = await pool.execute(
       'SELECT state_key, state_value FROM user_app_state WHERE user_id = ?',
