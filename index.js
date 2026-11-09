@@ -98,6 +98,7 @@ app.use(cors({ origin: [...new Set(allowed)] }));
 
 // Les photos et l'état de l'app passent en JSON : corps plus gros uniquement pour ces routes.
 app.use('/api/app-state', express.json({ limit: '9mb' }));
+app.use('/api/progress/photos', express.json({ limit: '4mb' }));
 app.use('/api/llm', express.json({ limit: '10mb' }));
 app.use(['/api/meals/analyze', '/api/goal/photo', '/api/body/photo'], express.json({ limit: '5mb' }));
 app.use(express.json({ limit: '50kb' }));
@@ -549,6 +550,7 @@ require('./activity-routes')(app, { pool, requireAuth, requireVerified, limiter 
 require('./sport-routes')(app, { pool, requireAuth, requireVerified, limiter, DAILY_LIMITS, usedToday, refund });
 require('./app-state-routes')(app, { pool, requireAuth, requireVerified, limiter });
 require('./community-routes')(app, { pool, requireAuth, requireVerified, limiter });
+require('./progress-photo-routes')(app, { pool, requireAuth, requireVerified, limiter });
 
 // ---- Partenaires et admin : chargés si le fichier est présent ----
 if (fs.existsSync(`${__dirname}/partner-routes.js`)) {
