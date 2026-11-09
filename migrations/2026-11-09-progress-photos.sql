@@ -11,4 +11,4 @@ CREATE TABLE IF NOT EXISTS user_progress_photos (
   KEY idx_user_progress_photos_created (user_id, created_at),
   CONSTRAINT fk_user_progress_photos_user
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

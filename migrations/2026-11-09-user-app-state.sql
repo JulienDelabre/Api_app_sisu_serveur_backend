@@ -8,4 +8,4 @@ CREATE TABLE IF NOT EXISTS user_app_state (
   PRIMARY KEY (user_id, state_key),
   CONSTRAINT fk_user_app_state_user
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
