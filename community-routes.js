@@ -20,8 +20,8 @@ module.exports = function registerCommunityRoutes(app, deps) {
       : '';
 
   async function getChallengeProgress(userId, challenge) {
-    if (!challenge.joined_at) return 0;
-    const since = String(challenge.joined_at).slice(0, 10);
+    if (!challenge.joined_on) return 0;
+    const since = String(challenge.joined_on).slice(0, 10);
     if (challenge.category === 'sport') {
       const [rows] = await pool.execute(
         "SELECT COUNT(*) AS total FROM workout_sessions WHERE user_id = ? AND status = 'done' AND done_on >= ? AND done_on <= CURDATE()",
@@ -156,7 +156,7 @@ module.exports = function registerCommunityRoutes(app, deps) {
   app.get('/api/community/challenges', ...verified, wrap(async (req, res) => {
     const [rows] = await pool.execute(
       `SELECT c.id, c.title, c.subtitle, c.category, c.duration_days, c.target_value, c.unit,
-              m.joined_at,
+              DATE_FORMAT(m.joined_at, '%Y-%m-%d') AS joined_on,
               (m.user_id IS NOT NULL) AS joined,
               (SELECT COUNT(*) FROM community_challenge_memberships x WHERE x.challenge_id = c.id) AS participants_count
        FROM community_challenges c
