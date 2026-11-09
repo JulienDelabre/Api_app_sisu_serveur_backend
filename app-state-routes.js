@@ -33,6 +33,13 @@ module.exports = function registerAppStateRoutes(app, deps) {
     }
   };
 
+  app.get('/api/public/stats', limiter(60 * 1000, 60), wrap(async (_req, res) => {
+    const [rows] = await pool.execute(
+      `SELECT COUNT(*) AS total FROM users WHERE status = 'active' AND email_verified_at IS NOT NULL`
+    );
+    res.json({ registeredUsersCount: Number(rows[0]?.total || 0) });
+  }));
+
   app.get('/api/app-state', requireAuth, requireVerified, wrap(async (req, res) => {
     const [rows] = await pool.execute(
       'SELECT state_key, state_value FROM user_app_state WHERE user_id = ?',
