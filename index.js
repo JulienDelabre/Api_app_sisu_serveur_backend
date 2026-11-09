@@ -96,7 +96,8 @@ const allowed = [
 ];
 app.use(cors({ origin: [...new Set(allowed)] }));
 
-// Les photos passent en base64 : corps plus gros uniquement pour les routes concernées.
+// Les photos et l'état de l'app passent en JSON : corps plus gros uniquement pour ces routes.
+app.use('/api/app-state', express.json({ limit: '9mb' }));
 app.use('/api/llm', express.json({ limit: '10mb' }));
 app.use(['/api/meals/analyze', '/api/goal/photo', '/api/body/photo'], express.json({ limit: '5mb' }));
 app.use(express.json({ limit: '50kb' }));
