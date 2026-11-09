@@ -19,6 +19,38 @@ module.exports = function registerCommunityRoutes(app, deps) {
       ? value.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max)
       : '';
 
+  async function getChallengeProgress(userId, challenge) {
+    if (!challenge.joined_at) return 0;
+    const since = String(challenge.joined_at).slice(0, 10);
+    if (challenge.category === 'sport') {
+      const [rows] = await pool.execute(
+        "SELECT COUNT(*) AS total FROM workout_sessions WHERE user_id = ? AND status = 'done' AND done_on >= ? AND done_on <= CURDATE()",
+        [userId, since]
+      );
+      return Number(rows[0]?.total || 0);
+    }
+    if (challenge.category === 'food') {
+      const [rows] = await pool.execute(
+        'SELECT COUNT(*) AS total FROM meal_logs WHERE user_id = ? AND eaten_on >= ? AND eaten_on <= CURDATE()',
+        [userId, since]
+      );
+      return Number(rows[0]?.total || 0);
+    }
+    const stateKey = challenge.category === 'skincare' ? 'skincare_dates' : 'mind_dates';
+    const [rows] = await pool.execute(
+      'SELECT state_value FROM user_app_state WHERE user_id = ? AND state_key = ?',
+      [userId, stateKey]
+    );
+    if (!rows[0]) return 0;
+    let dates = rows[0].state_value;
+    if (typeof dates === 'string') {
+      try { dates = JSON.parse(dates); } catch { dates = []; }
+    }
+    return Array.isArray(dates)
+      ? new Set(dates.map(String).filter((date) => date >= since && date <= new Date().toISOString().slice(0, 10))).size
+      : 0;
+  }
+
   async function listPosts(userId) {
     const [rows] = await pool.execute(
       `SELECT p.id, p.user_id, u.username, p.category, p.content, p.compiled_data, p.created_at
@@ -124,6 +156,7 @@ module.exports = function registerCommunityRoutes(app, deps) {
   app.get('/api/community/challenges', ...verified, wrap(async (req, res) => {
     const [rows] = await pool.execute(
       `SELECT c.id, c.title, c.subtitle, c.category, c.duration_days, c.target_value, c.unit,
+              m.joined_at,
               (m.user_id IS NOT NULL) AS joined,
               (SELECT COUNT(*) FROM community_challenge_memberships x WHERE x.challenge_id = c.id) AS participants_count
        FROM community_challenges c
@@ -131,13 +164,20 @@ module.exports = function registerCommunityRoutes(app, deps) {
        WHERE c.active = 1 ORDER BY FIELD(c.category, 'sport','food','skincare','mind'), c.id`,
       [req.user.id]
     );
-    res.json({
-      challenges: rows.map((row) => ({
+    const challenges = await Promise.all(rows.map(async (row) => {
+      const currentValue = await getChallengeProgress(req.user.id, row);
+      const targetValue = Number(row.target_value);
+      return {
         id: row.id, title: row.title, subtitle: row.subtitle, category: row.category,
-        durationDays: Number(row.duration_days), targetValue: Number(row.target_value), unit: row.unit,
-        joined: !!row.joined, participantsCount: Number(row.participants_count)
-      }))
-    });
+        durationDays: Number(row.duration_days), targetValue, unit: row.unit,
+        joined: !!row.joined, participantsCount: Number(row.participants_count),
+        currentValue,
+        progressPercent: targetValue > 0 ? Math.min(100, Math.round((currentValue / targetValue) * 100)) : 0,
+        isCompleted: targetValue > 0 && currentValue >= targetValue,
+        progressDetail: `${currentValue} / ${targetValue} ${row.unit}`
+      };
+    }));
+    res.json({ challenges });
   }));
 
   app.post('/api/community/challenges/:id/join', limiter(60 * 1000, 30), ...verified, wrap(async (req, res) => {
