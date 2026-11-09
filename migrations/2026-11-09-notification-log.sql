@@ -12,4 +12,4 @@ CREATE TABLE IF NOT EXISTS notification_log (
   KEY idx_notification_log_created (created_at),
   CONSTRAINT fk_notification_log_user
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
