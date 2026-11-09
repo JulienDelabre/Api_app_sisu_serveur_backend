@@ -22,7 +22,8 @@ module.exports = function registerAppStateRoutes(app, deps) {
     'mind_types',
     'tracked_sessions',
     'recommendations',
-    'recommendation_offsets'
+    'recommendation_offsets',
+    'recommendation_reload_times'
   ]);
 
   const wrap = (fn) => async (req, res, next) => {
