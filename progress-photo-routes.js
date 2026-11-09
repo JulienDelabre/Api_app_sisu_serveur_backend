@@ -36,6 +36,7 @@ module.exports = function registerProgressPhotoRoutes(app, deps) {
       'SELECT id, photo_type, label, mime_type, image, created_at FROM user_progress_photos WHERE user_id = ? ORDER BY created_at DESC, id DESC',
       [req.user.id]
     );
+    res.set('Cache-Control', 'private, no-store');
     res.json({ photos: rows.map(mapPhoto) });
   }));
 
@@ -70,6 +71,7 @@ module.exports = function registerProgressPhotoRoutes(app, deps) {
       'SELECT id, photo_type, label, mime_type, image, created_at FROM user_progress_photos WHERE id = ? AND user_id = ?',
       [id, req.user.id]
     );
+    res.set('Cache-Control', 'private, no-store');
     res.status(201).json({ photo: mapPhoto(rows[0]) });
   }));
 
