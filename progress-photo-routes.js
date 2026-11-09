@@ -17,7 +17,7 @@ module.exports = function registerProgressPhotoRoutes(app, deps) {
     }
   };
   const cleanLabel = (value) => typeof value === 'string'
-    ? value.replace(/[\\u0000-\\u001f\\u007f]/g, ' ').replace(/\\s+/g, ' ').trim().slice(0, 120)
+    ? value.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120)
     : null;
 
   const mapPhoto = (row) => {
@@ -43,7 +43,7 @@ module.exports = function registerProgressPhotoRoutes(app, deps) {
     const body = req.body || {};
     if (!TYPES.has(body.type)) return res.status(400).json({ error: 'Type de photo invalide' });
     const match = typeof body.dataUrl === 'string'
-      ? /^data:(image\\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]+={0,2})$/.exec(body.dataUrl)
+      ? /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]+={0,2})$/.exec(body.dataUrl)
       : null;
     if (!match || !MIME_TYPES.has(match[1])) return res.status(400).json({ error: 'Image invalide' });
     const image = Buffer.from(match[2], 'base64');
