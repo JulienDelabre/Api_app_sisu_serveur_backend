@@ -551,6 +551,7 @@ require('./sport-routes')(app, { pool, requireAuth, requireVerified, limiter, DA
 require('./app-state-routes')(app, { pool, requireAuth, requireVerified, limiter });
 require('./community-routes')(app, { pool, requireAuth, requireVerified, limiter });
 require('./progress-photo-routes')(app, { pool, requireAuth, requireVerified, limiter });
+require('./subscription-routes')(app, { pool, requireAuth, requireVerified, limiter });
 
 // ---- Partenaires et admin : chargés si le fichier est présent ----
 if (fs.existsSync(`${__dirname}/partner-routes.js`)) {
