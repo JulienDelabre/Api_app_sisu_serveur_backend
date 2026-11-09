@@ -200,7 +200,7 @@ module.exports = function registerSubscriptionRoutes(app, deps) {
     let renewalInfo;
     if (renewalSigned) {
       try {
-        renewalInfo = (await checked.verifier.verifyAndDecodeRenewalInfo(renewalSigned)).value || undefined;
+        renewalInfo = await checked.verifier.verifyAndDecodeRenewalInfo(renewalSigned);
       } catch (error) {
         const invalid = new Error('Apple renewal signature verification failed');
         invalid.status = 400;
@@ -228,7 +228,7 @@ module.exports = function registerSubscriptionRoutes(app, deps) {
     let renewalInfo;
     if (data.signedRenewalInfo) {
       try {
-        renewalInfo = (await checked.verifier.verifyAndDecodeRenewalInfo(data.signedRenewalInfo)).value;
+        renewalInfo = await checked.verifier.verifyAndDecodeRenewalInfo(data.signedRenewalInfo);
       } catch {
         renewalInfo = undefined;
       }
