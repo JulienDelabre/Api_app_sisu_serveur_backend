@@ -546,6 +546,7 @@ require('./account-routes')(app, {
 // ---- Lot 2 : activité (pas), sport, progression, calendrier ----
 require('./activity-routes')(app, { pool, requireAuth, requireVerified, limiter });
 require('./sport-routes')(app, { pool, requireAuth, requireVerified, limiter, DAILY_LIMITS, usedToday, refund });
+require('./app-state-routes')(app, { pool, requireAuth, requireVerified, limiter });
 
 // ---- Partenaires et admin : chargés si le fichier est présent ----
 if (fs.existsSync(`${__dirname}/partner-routes.js`)) {
